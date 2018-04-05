@@ -1,0 +1,81 @@
+diff --git a/src/usr.sbin/ntpd/ntpd.8 b/src/usr.sbin/ntpd/ntpd.8
+index 0b74c25..fc7e7a6 100644
+--- a/src/usr.sbin/ntpd/ntpd.8
++++ b/src/usr.sbin/ntpd/ntpd.8
+@@ -23,7 +23,7 @@
+ .Sh SYNOPSIS
+ .Nm ntpd
+ .Bk -words
+-.Op Fl dnSsv
++.Op Fl dnSsv4
+ .Op Fl f Ar file
+ .Ek
+ .Sh DESCRIPTION
+@@ -72,6 +72,8 @@ configured NTP servers to reply.
+ This option allows
+ .Nm
+ to send DEBUG priority messages to syslog.
++.It Fl 4
++Only use IPv4 addresses when looking up hostnames
+ .El
+ .Pp
+ .Nm
+diff -rwdbBU 3 ./config.c /home/jmullee/ntpd_src_patched/config.c
+--- ./config.c	2018-04-05 18:14:46.418545999 +0000
++++ /home/jmullee/ntpd_src_patched/config.c	2018-04-05 17:44:38.910545999 +0000
+@@ -34,6 +34,7 @@
+ 
+ static u_int32_t		 maxid = 0;
+ static u_int32_t		 constraint_maxid = 0;
++u_int8_t			 ip4peersonly = 0;
+ 
+ void
+ host(const char *s, struct ntp_addr **hn)
+@@ -133,7 +134,7 @@
+ 	struct ntp_addr		*h, *hh = NULL;
+ 
+ 	memset(&hints, 0, sizeof(hints));
+-	hints.ai_family = PF_UNSPEC;
++	hints.ai_family = (1==ip4peersonly) ? AF_INET : AF_UNSPEC;
+ 	hints.ai_socktype = SOCK_DGRAM; /* DUMMY */
+ 	/* ntpd MUST NOT use AI_ADDRCONFIG here */
+ 	error = getaddrinfo(s, NULL, &hints, &res0);
+diff -rwdbBU 3 ./ntpd.c /home/jmullee/ntpd_src_patched/ntpd.c
+--- ./ntpd.c	2018-04-05 18:14:46.422545999 +0000
++++ /home/jmullee/ntpd_src_patched/ntpd.c	2018-04-05 17:46:05.042545999 +0000
+@@ -64,6 +64,7 @@
+ int			 timeout = INFTIM;
+ 
+ extern u_int		 constraint_cnt;
++extern u_int8_t		 ip4peersonly;
+ 
+ const char		*showopt;
+ 
+@@ -109,7 +110,7 @@
+ 		fprintf(stderr,
+ 		    "usage: ntpctl -s all | peers | Sensors | status\n");
+ 	else
+-		fprintf(stderr, "usage: %s [-dnSsv] [-f file] [-p file]\n",
++		fprintf(stderr, "usage: %s [-dnSsv4] [-f file] [-p file]\n",
+ 		    __progname);
+ 	exit(1);
+ }
+@@ -165,7 +166,7 @@
+ 	argv0 = argv;
+ #endif
+ 
+-	while ((ch = getopt(argc, argv, "df:np:P:sSv")) != -1) {
++	while ((ch = getopt(argc, argv, "df:np:P:sSv4")) != -1) {
+ 		switch (ch) {
+ 		case 'd':
+ 			lconf.debug = 2;
+@@ -192,6 +193,9 @@
+ 		case 'v':
+ 			lconf.verbose++;
+ 			break;
++		case '4':
++			ip4peersonly = 1; /* global static in config.c */
++			break;
+ 		default:
+ 			usage();
+ 			/* NOTREACHED */
