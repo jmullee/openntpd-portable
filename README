@@ -1,3 +1,12 @@
+This fork adds a patch to use a command-line option " -4 "
+to use ipv4 addresses only from lookup-up hostnames
+
+    https://github.com/jmullee/openntpd-portable/blob/master/patches/0014-IPv4-only-commandline-option.patch
+
+tested on Linux (debian, alpine)
+
+---~~~OOO~~~---
+
 This is a new port of OpenBSD's native ntpd to other Unix flavours adding
 autoconf support and the necessary compatibility layer.  It is based on
 portability code from the OpenSSH and LibreSSL portable projects.
